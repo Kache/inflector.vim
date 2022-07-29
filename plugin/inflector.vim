@@ -92,35 +92,30 @@ function! s:Inflect(type, ...)
     echom 'Select Inflection (' . join(keys(l:inflections)) . '):'
     let l:inflection = nr2char(getchar())
 
-    " return early on invalid inflection
-    if ! has_key(l:inflections, l:inflection)
-        echom 'Invalid option' | return
-    endif
+    " apply inflection or output error msg
+    if has_key(l:inflections, l:inflection)
+        if a:0  " Invoked from Visual mode, use gv command.
+            silent exe "normal! gvy"
+        elseif a:type == 'line'
+            silent exe "normal! '[V']y"
+        else
+            silent exe "normal! `[v`]y"
+        endif
 
-    if a:0  " Invoked from Visual mode, use gv command.
-        silent exe "normal! gvy"
-    elseif a:type == 'line'
-        silent exe "normal! '[V']y"
+        " call inflector
+        let l:InflectionFunction = function(l:inflections[l:inflection])
+        let l:result = l:InflectionFunction(@@)
+
+        " replace old text with result
+        execute "normal! `[v`]c" . l:result
     else
-        silent exe "normal! `[v`]y"
+        echom 'Invalid option'
     endif
 
-    " call inflector
-    let l:InflectionFunction = function(l:inflections[l:inflection])
-    let l:result = l:InflectionFunction(@@)
-
-    " set result in clipboard
-    call setreg('@', l:result, getregtype('@'))
-
-    " replace old text with result
-    normal! `[v`]p
 
     " restore previous state
     let @@ = l:saved_register
     call winrestview(l:winview)
-
-    " clear command line
-    echom ''
 endfunction
 
 " export plugin mappings
